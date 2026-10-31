@@ -1,4 +1,6 @@
 import os
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, ConversationHandler,
@@ -12,6 +14,25 @@ TUR, SONI, ISM, TEL, MANZIL = range(5)
 
 TURLAR = [["Erkaklar naskisi", "Ayollar naskisi"], ["Bolalar naskisi", "Aralash"]]
 MENU = ReplyKeyboardMarkup([["🛒 Buyurtma berish"]], resize_keyboard=True)
+
+
+class Ping(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+
+    def do_HEAD(self):
+        self.send_response(200)
+        self.end_headers()
+
+    def log_message(self, *a):
+        pass
+
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    HTTPServer(("0.0.0.0", port), Ping).serve_forever()
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -109,6 +130,7 @@ def main():
     )
     app.add_handler(CommandHandler("start", start))
     app.add_handler(conv)
+    threading.Thread(target=run_web, daemon=True).start()
     app.run_polling()
 
 
